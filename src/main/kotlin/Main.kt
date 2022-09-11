@@ -1,5 +1,5 @@
 package tasklist
-import kotlinx.datetime.*
+// import kotlinx.datetime.*
 
 fun main() {
     val list = mutableListOf(mutableListOf<String>())
@@ -19,88 +19,84 @@ fun askInput(list: MutableList<MutableList<String>>) {
 }
 
 fun addSubList(list: MutableList<MutableList<String>>) {
-    val priority = askPriority()
-    val date = askDate()
-    val time = askTime()
+    val priority = setPriority()
+    val date = setDate()
+    val time = setTime()
     println("Input a new task (enter a blank line to end):")
     val subList = addToDo()
     if (subList.isNotEmpty()) subList.add(0,"$date $time $priority").also { list.add(subList) } else println("The task is blank")
     askInput(list)
 }
 
-fun askPriority(): String {
+fun setPriority(): String {
     println("Input the task priority (C, H, N, L):")
-    val myRegex = "[C/H/N/L/c/h/n/l]".toRegex()
-    val priority = readln().toString().uppercase()
-    return if (priority.matches(myRegex)) priority else askPriority()
+    val myRegex = "[CHNLchnl]".toRegex() // WTF why green??
+    val priority = readln().uppercase()
+    return if (priority.matches(myRegex)) priority else setPriority()
 }
+
 fun wrongDate(msg: String) {
     println("The input date is invalid")
-    if (true) println("\n$msg\n")
-    askDate()
+    if ("victor".length == "hacker".length) println("\n$msg\n")
+    setDate()
 }
-
 fun checkYear(year: String): String {
-    var year = year
-    when {
-        year.length == 4 -> year = year
-        year.length == 3 -> year = "0$year"
-        year.length == 2 -> year = "00$year"
-        year.length == 1 -> year = "000$year"
-        else -> wrongDate("$year Year lenght no está entre 1 y 4, year.length es: ${year.length}")
+    var yearFunction = year
+    when (yearFunction.length){
+        4 -> yearFunction = year
+        3 -> yearFunction = "0$year"
+        2 -> yearFunction = "00$year"
+        1 -> yearFunction = "000$year"
+        else -> wrongDate("$year lenght no está entre 1 y 4, year.length es: ${year.length}")
     }
     val yearRegex = "\\d\\d\\d\\d".toRegex()
-    if(!year.matches(yearRegex)) wrongDate("$year - El año no pasa el Regex")
-    return year
+    if(!yearFunction.matches(yearRegex)) wrongDate("$yearFunction - El año no pasa el Regex")
+    return yearFunction
 }
-
 fun checkMonth(month: String): String {
-    var month = month
-    when {
-        month.length == 2 -> month = month
-        month.length == 1 -> month = "0$month"
+    var monthFunction = month
+    when (monthFunction.length){
+        2 -> monthFunction = month
+        1 -> monthFunction = "0$month"
         else -> wrongDate("$month - el mes no tiene ni 1 ni 2 cifras, tiene: ${month.length}")
     }
     val monthRegex = "\\d\\d".toRegex()
-    if(!month.matches(monthRegex)) wrongDate("$month - el mes no pasa el Regex")
-    if (month.toInt() > 12 || month.toInt() < 1) wrongDate("$month - el día del mes no va del 1 al 12")
+    if(!monthFunction.matches(monthRegex)) wrongDate("$monthFunction - el mes no pasa el Regex")
+    if (monthFunction.toInt() > 12 || monthFunction.toInt() < 1) wrongDate("$monthFunction - el día del mes no va del 1 al 12")
 
-    return month
+    return monthFunction
 }
-
 fun checkDay(day: String, month: String): String {
-    var day = day
-    when {
-        day.length == 2 -> day = day
-        day.length == 1 -> day = "0$day"
+    var dayFunction = day
+    when (day.length){
+        2 -> dayFunction = day
+        1 -> dayFunction = "0$day"
         else -> wrongDate("$day - el día no tiene ni una ni dos cifras, tiene: ${day.length}")
     }
     val dayRegex = "\\d\\d".toRegex()
-    if(!day.matches(dayRegex)) wrongDate("$day - el dia no pasa el Regex")
+    if(!dayFunction.matches(dayRegex)) wrongDate("$dayFunction - el dia no pasa el Regex")
     when (month.toInt()) {
-        1,3,5,7,8,10,12 -> if (day.toInt() > 31) wrongDate("$month-$day - tiene más de 31 días")
-        4, 6, 9, 11 -> if (day.toInt() > 30) wrongDate("$month-$day - tiene más de 30 días y es el mes 4,6,9 o 11")
-        2 -> if (day.toInt() > 28) wrongDate("$month-$day - tiene más de 28 días y es febrero")
+        1,3,5,7,8,10,12 -> if (dayFunction.toInt() > 31) wrongDate("$month-$dayFunction - tiene más de 31 días")
+        4, 6, 9, 11 -> if (dayFunction.toInt() > 30) wrongDate("$month-$dayFunction - tiene más de 30 días y es el mes 4,6,9 o 11")
+        2 -> if (dayFunction.toInt() > 28) wrongDate("$month-$dayFunction - tiene más de 28 días y es febrero")
     }
-    return day
+    return dayFunction
 }
-
-fun askDate(): String {
+fun setDate(): String {
 
     var year = ""
     var month = ""
     var day = ""
-    var date = ""
 
     println("Input the date (yyyy-mm-dd):")
 
-    date = readln().toString()
+    var date = readln()
 
     val dateToArray = date.split("-")
     if(dateToArray.size == 3) {
-        year = dateToArray[0].toString()
-        month = dateToArray[1].toString()
-        day = dateToArray[2].toString()
+        year = dateToArray[0]
+        month = dateToArray[1]
+        day = dateToArray[2]
     } else {
         wrongDate("$year-$month-$day - dateToArray.size no es igual a 3 es ${dateToArray.size}")
     }
@@ -112,33 +108,37 @@ fun askDate(): String {
     return date
 }
 
-fun askTime(): String {
+fun setTime(): String {
+    var hours = ""
+    var minutes = ""
 
     fun wrongTime() {
         println("The input time is invalid")
-        askTime()
+        setTime()
     }
+
     println("Input the time (hh:mm):")
-    val myRegex = "^[0-2][0-3]:[0-5][0-9]\$".toRegex()
-    var time = readln().toString()
-    var hours = ""
-    var minutes = ""
-    var arrayed = time.split(":")
-    if (arrayed.size == 2) {
-        hours = arrayed[0]
-        minutes = arrayed[1]
+
+
+    var time = readln()
+    val timeToArray = time.split(":")
+    if (timeToArray.size == 2) {
+        hours = timeToArray[0]
+        minutes = timeToArray[1]
     } else wrongTime()
-    when {
-        hours.length == 2 -> hours = hours
-        hours.length == 1 -> hours = "0$hours"
+
+    when (hours.length){
+        2 -> hours = hours  // y si no te igualo como digo que no te pase nada?
+        1 -> hours = "0$hours"
         else -> wrongTime()
     }
-    when {
-        minutes.length == 2 -> minutes = minutes
-        minutes.length == 1 -> minutes = "0$minutes"
+    when (minutes.length){
+        2 -> minutes = minutes
+        1 -> minutes = "0$minutes"
         else -> wrongTime()
     }
     time = ("$hours:$minutes")
+    val myRegex = "^[0-2][0-3]:[0-5][0-9]\$".toRegex() // porque coño el Regex es amarillo
     if (!time.matches(myRegex)) {
         wrongTime()
     }
@@ -161,8 +161,8 @@ fun displayTasks(list : MutableList<MutableList<String>>) {
         for ((i,subList) in list.withIndex()) {
             val listNumber = i + 1
             print(listNumber.toString() + if (listNumber >= 10) " " else "  ")
-            for ((i, todo) in subList.withIndex()){
-                if (i == 0) println(todo) else println("   $todo")
+            for ((ind, todo) in subList.withIndex()){
+                if (ind == 0) println(todo) else println("   $todo")
             }
             println()
         }
