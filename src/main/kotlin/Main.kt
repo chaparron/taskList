@@ -1,17 +1,14 @@
 import kotlinx.datetime.*
 import com.squareup.moshi.*
-
 enum class Priority(val humanStr: String, color: String) {
     C("Critical","\u001B[101m \u001B[0m"),
     H("High","\u001B[103m \u001B[0m"),
     N("Normal","\u001B[102m \u001B[0m"),
     L("Low","\u001B[104m \u001B[0m")
 }
-
 enum class Field {
     Priority, Date, Time, Task
 }
-
 class Task(var priority: Priority, var dateTime: LocalDateTime) {
     var list = mutableListOf<String>()
     fun add(s: String) {
@@ -55,7 +52,6 @@ class Task(var priority: Priority, var dateTime: LocalDateTime) {
         list = newList
     }
 }
-
 fun main() {
     val taskList = mutableListOf<Task>()
 
@@ -76,7 +72,6 @@ fun main() {
         }
     }
 }
-
 private fun addToList(taskList: MutableList<Task>) {
     val priority = readPriority()
     val date = readDate()
@@ -100,7 +95,6 @@ private fun addToList(taskList: MutableList<Task>) {
         taskList.add(task)
     }
 }
-
 private fun readPriority(): Priority {
     while (true) {
         try {
@@ -111,7 +105,6 @@ private fun readPriority(): Priority {
         }
     }
 }
-
 private fun readDate(): LocalDate {
     while (true) try {
         println("Input the date (yyyy-mm-dd):")
@@ -121,7 +114,6 @@ private fun readDate(): LocalDate {
         println("The input date is invalid")
     }
 }
-
 private fun readTime(): LocalDateTime {
     while (true) try {
         println("Input the time (hh:mm):")
@@ -131,8 +123,7 @@ private fun readTime(): LocalDateTime {
         println("The input time is invalid")
     }
 }
-
-private fun stillNoTasks () {
+private fun stillNoTasks() {
     println("No tasks have been input")
 }
 private fun printList(taskList: MutableList<Task>) {
@@ -166,7 +157,6 @@ private fun printList(taskList: MutableList<Task>) {
     }
     println()
 }
-
 private fun deleteList(taskList: MutableList<Task>) {
     if (taskList.size == 0) {
         return stillNoTasks()
@@ -184,7 +174,6 @@ private fun deleteList(taskList: MutableList<Task>) {
     taskList.removeAt(selectedIndex!! - 1)
     println("The task is deleted")
 }
-
 private fun selectField():Field {
     while (true) try {
         println("Input a field to edit (priority, date, time, task):")
