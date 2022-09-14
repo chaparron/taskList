@@ -1,22 +1,19 @@
 import kotlinx.datetime.*
 import com.squareup.moshi.*
-enum class Priority(val humanStr: String, color: String) {
-    C("Critical","\u001B[101m \u001B[0m"),
-    H("High","\u001B[103m \u001B[0m"),
-    N("Normal","\u001B[102m \u001B[0m"),
-    L("Low","\u001B[104m \u001B[0m")
-}
+import java.io.File
+import java.lang.reflect.ParameterizedType
+
 enum class Field {
     Priority, Date, Time, Task
 }
-class Task(var priority: Priority, var dateTime: LocalDateTime) {
+class Task(var priority: String, var dateTime: String) {
     var list = mutableListOf<String>()
     fun add(s: String) {
         list.add(s)
     }
     fun dueTag(): String {
         val now = Clock.System.todayAt(TimeZone.UTC)
-        val taskDate = dateTime.toString().split("T")[0].toLocalDate()
+        val taskDate = dateTime.split("T")[0].toLocalDate()
         return if (now > taskDate) {
             "\u001B[101m \u001B[0m" //"O" OutDated
         } else if (now == taskDate) {
@@ -31,7 +28,7 @@ class Task(var priority: Priority, var dateTime: LocalDateTime) {
     }
 
     fun getColor(): String{
-        return when (priority.toString()) {
+        return when (priority) {
             "C" -> "\u001B[101m \u001B[0m"
             "H" -> "\u001B[103m \u001B[0m"
             "N" -> "\u001B[102m \u001B[0m"
@@ -39,14 +36,15 @@ class Task(var priority: Priority, var dateTime: LocalDateTime) {
             else -> "you broke it"
         }
     }
-    fun editPriority(newPriority: Priority) {
+    fun editPriority(newPriority: String) {
         priority = newPriority
     }
     fun editDate(year: Int, month: Int, day: Int) {
-        dateTime = LocalDateTime(year, month, day, dateTime.hour, dateTime.minute)
+
+        dateTime = LocalDateTime(year, month, day, 0, 0).toString()
     }
     fun editTime(hour: Int, minute: Int) {
-        dateTime = LocalDateTime(dateTime.year, dateTime.monthNumber, dateTime.dayOfMonth, hour, minute)
+        dateTime = LocalDateTime(2000, 3, 30, hour, minute).toString()
     }
     fun editList( newList: MutableList<String>) {
         list = newList
@@ -55,14 +53,24 @@ class Task(var priority: Priority, var dateTime: LocalDateTime) {
 fun main() {
     val taskList = mutableListOf<Task>()
 
+    val moshi: Moshi = Moshi.Builder()
+        .add(KotlinJsonAdapterFactory())
+        .build()
+    val type: ParameterizedType = Types.newParameterizedType(List::class.java, Task::class.java)
+    val taskListAdapter: JsonAdapter<List<Task?>> = moshi.adapter(type)
+    val jsonFile = File("tasklist.json")
+
+    readJson(taskList, jsonFile, taskListAdapter)
+
     while (true) {
         println("Input an action (add, print, edit, delete, end):")
         val input = readln()
         when (input.lowercase()) {
-            "add" -> addToList(taskList)
+            "add" -> addToList(taskList, jsonFile, taskListAdapter)
             "print" -> printList(taskList)
-            "delete" -> deleteList(taskList)
-            "edit" -> editList(taskList)
+            "delete" -> deleteList(taskList, jsonFile, taskListAdapter)
+            "edit" -> editList(taskList, jsonFile, taskListAdapter)
+            "save" -> saveJson(taskList, jsonFile, taskListAdapter)
             "end" -> {
                 println("Tasklist exiting!")
                 break
@@ -72,12 +80,40 @@ fun main() {
         }
     }
 }
-private fun addToList(taskList: MutableList<Task>) {
+private fun readJson(taskList: MutableList<Task>, jsonFile: File, taskListAdapter: JsonAdapter<List<Task?>>) {
+
+    val separator = File.separator
+    val path = System.getProperty("user.dir")
+    if (File("$path$separator$jsonFile").exists()){
+        val newTaskString = File("$path$separator$jsonFile").readText().trimIndent()
+        val newTask = taskListAdapter.fromJson(newTaskString)
+        val readedTaskList = mutableListOf<Task>()
+        var readedPriority: String = ""
+        var readedDatetime: String = ""
+        var readedList = mutableListOf<String>()
+        for (i in 0 until newTask!!.size){
+            readedPriority = newTask!![i]!!.priority
+            readedDatetime = newTask!![i]!!.dateTime
+            readedList = newTask!![i]!!.list
+            readedTaskList.add(Task(readedPriority, readedDatetime))
+            for (ind in 0 until readedList.size) {
+                readedTaskList[i].add(readedList[ind])
+            }
+
+        }
+        taskList += readedTaskList
+    }
+}
+private fun saveJson(taskList: MutableList<Task>, jsonFile: File, taskListAdapter: JsonAdapter<List<Task?>> ) {
+
+    jsonFile.writeText(taskListAdapter.toJson(taskList))
+}
+private fun addToList(taskList: MutableList<Task>, jsonFile: File, taskListAdapter: JsonAdapter<List<Task?>> ) {
     val priority = readPriority()
     val date = readDate()
     val time = readTime()
 
-    val task = Task(priority, LocalDateTime(date.year, date.month, date.dayOfMonth, time.hour, time.minute))
+    val task = Task(priority, LocalDateTime(date.year, date.month, date.dayOfMonth, time.hour, time.minute).toString())
 
     println("Input a new task (enter a blank line to end):")
     while (true) {
@@ -93,13 +129,14 @@ private fun addToList(taskList: MutableList<Task>) {
         println("The task is blank")
     } else {
         taskList.add(task)
+        saveJson(taskList, jsonFile, taskListAdapter)
     }
 }
-private fun readPriority(): Priority {
+private fun readPriority(): String {
     while (true) {
         try {
             println("Input the task priority (C, H, N, L):")
-            return Priority.valueOf(readln().uppercase())
+            return readln().uppercase()
         } catch (e: IllegalArgumentException) {
             // just try again without saying anything because jetbrains says so
         }
@@ -138,7 +175,7 @@ private fun printList(taskList: MutableList<Task>) {
             "| ${(index + 1).toString().padEnd(2)} | ${task.printDateTime()} | ${task.getColor()} | ${task.dueTag()} |"
         )
         for (i in 0 until task.list.size) {
-            var arrayTask = task.list[i].toString().chunked(44)
+            val arrayTask = task.list[i].toString().chunked(44)
             if (i == 0){
                 for (ind in 0 until arrayTask.size){
                     if (ind == 0) {
@@ -157,7 +194,7 @@ private fun printList(taskList: MutableList<Task>) {
     }
     println()
 }
-private fun deleteList(taskList: MutableList<Task>) {
+private fun deleteList(taskList: MutableList<Task>, jsonFile: File, taskListAdapter: JsonAdapter<List<Task?>> ) {
     if (taskList.size == 0) {
         return stillNoTasks()
     }
@@ -172,6 +209,7 @@ private fun deleteList(taskList: MutableList<Task>) {
         } else break@outer
     }
     taskList.removeAt(selectedIndex!! - 1)
+    saveJson(taskList, jsonFile, taskListAdapter)
     println("The task is deleted")
 }
 private fun selectField():Field {
@@ -182,7 +220,7 @@ private fun selectField():Field {
         println("Invalid field")
     }
 }
-private fun editList(taskList: MutableList<Task>) {
+private fun editList(taskList: MutableList<Task>, jsonFile: File, taskListAdapter: JsonAdapter<List<Task?>> ) {
     if (taskList.size == 0) {
         return stillNoTasks()
     }
@@ -237,5 +275,6 @@ private fun editList(taskList: MutableList<Task>) {
         }
         else -> println("something went wrong")
     }
+    saveJson(taskList, jsonFile, taskListAdapter)
     println("The task is changed")
 }
