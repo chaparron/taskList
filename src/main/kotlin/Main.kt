@@ -6,6 +6,12 @@ import java.lang.reflect.ParameterizedType
 enum class Field {
     Priority, Date, Time, Task
 }
+enum class Priority(val humanStr: String, color: String) {
+    C("Critical","\u001B[101m \u001B[0m"),
+    H("High","\u001B[103m \u001B[0m"),
+    N("Normal","\u001B[102m \u001B[0m"),
+    L("Low","\u001B[104m \u001B[0m")
+}
 class Task(var priority: String, var dateTime: String) {
     var list = mutableListOf<String>()
     fun add(s: String) {
@@ -39,12 +45,11 @@ class Task(var priority: String, var dateTime: String) {
     fun editPriority(newPriority: String) {
         priority = newPriority
     }
-    fun editDate(year: Int, month: Int, day: Int) {
-
-        dateTime = LocalDateTime(year, month, day, 0, 0).toString()
+    fun editDate(year: Int, month: Int, day: Int, hour: Int, minute: Int) {
+        dateTime = LocalDateTime(year, month, day, hour, minute).toString()
     }
-    fun editTime(hour: Int, minute: Int) {
-        dateTime = LocalDateTime(2000, 3, 30, hour, minute).toString()
+    fun editTime(year: Int, month: Int, day: Int, hour: Int, minute: Int) {
+        dateTime = LocalDateTime(year, month, day, hour, minute).toString()
     }
     fun editList( newList: MutableList<String>) {
         list = newList
@@ -136,7 +141,7 @@ private fun readPriority(): String {
     while (true) {
         try {
             println("Input the task priority (C, H, N, L):")
-            return readln().uppercase()
+            return Priority.valueOf(readln().uppercase()).toString()
         } catch (e: IllegalArgumentException) {
             // just try again without saying anything because jetbrains says so
         }
@@ -236,6 +241,9 @@ private fun editList(taskList: MutableList<Task>, jsonFile: File, taskListAdapte
         break@outer
     }
     val selectedTaskList = taskList[selectedIndex!! - 1]
+    val (selectedDate, selectedTime) = selectedTaskList.dateTime.split("T")
+    var (selectedYear, selectedMonth, selectedDay) = selectedDate.split("-")
+    var (selectedHour, selectedMinute) = selectedTime.split(":")
     val field = selectField().toString()
     when (field) {
         "Priority" -> {
@@ -244,19 +252,13 @@ private fun editList(taskList: MutableList<Task>, jsonFile: File, taskListAdapte
         }
         "Date" -> {
             val date = readDate()
-            selectedTaskList.editDate(date.year, date.monthNumber, date.dayOfMonth)
+            selectedTaskList.editDate(date.year, date.monthNumber, date.dayOfMonth, selectedHour.toInt(), selectedMinute.toInt())
         }
         "Time" -> {
             val time = readTime()
-            selectedTaskList.editTime(time.hour, time.minute)
+            selectedTaskList.editTime(selectedYear.toInt(), selectedMonth.toInt(), selectedDay.toInt(), time.hour, time.minute)
         }
         "Task" -> {
-//            val priority = taskList[selectedIndex!! - 1].priority
-//            val dateTime = taskList[selectedIndex!! - 1].dateTime
-
-
-            // fin del copia
-
             val task = mutableListOf<String>()
 
             println("Input a new task (enter a blank line to end):")
@@ -269,9 +271,6 @@ private fun editList(taskList: MutableList<Task>, jsonFile: File, taskListAdapte
                 }
             }
             selectedTaskList.editList(task)
-
-            // Fin del pega
-
         }
         else -> println("something went wrong")
     }
